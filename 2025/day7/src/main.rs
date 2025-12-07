@@ -95,7 +95,7 @@ fn solutioner_for_part_2(input: &str) -> String {
     let mut current_counts = vec![0u128; width];
     current_counts[start_x] = 1;
 
-    for i in 1..height {
+    for curent_row in 1..height {
         let mut next_counts = vec![0u128; width];
 
         // Update counts for the next row based on current row
@@ -104,7 +104,7 @@ fn solutioner_for_part_2(input: &str) -> String {
                 continue;
             }
 
-            if grid[i][pos] == "^" {
+            if grid[current_row][pos] == "^" {
                 if pos > 0 {
                     next_counts[pos - 1] += *count;
                 }
