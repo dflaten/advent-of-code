@@ -128,10 +128,78 @@ fn solutioner_for_part_1(input: &str) -> String {
 }
 
 
-// Solution for part two goes here
+// Connect all points using closest-first spanning (Kruskal) and
+// return the product of the X coordinates of the endpoints of the final merge.
 fn solutioner_for_part_2(input: &str) -> String {
-    // Placeholder return 
-    input.to_string()
+    let list_of_points = parse_list_of_points(input);
+    let n = list_of_points.len();
+
+    // Build all undirected edges with squared distances
+    let mut edges: Vec<_> = Vec::new();
+    for i in 0..n {
+        for j in (i + 1)..n {
+            let p = list_of_points[i];
+            let q = list_of_points[j];
+            let dx = (p.0 - q.0) as f64;
+            let dy = (p.1 - q.1) as f64;
+            let dz = (p.2 - q.2) as f64;
+            let dist_sq = dx * dx + dy * dy + dz * dz;
+
+            edges.push((OrderedFloat(dist_sq), i, j));
+        }
+    }
+
+    // Sort ascending by distance for Kruskal
+    edges.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+    // Union-Find structure to connect points 
+    let mut parent: Vec<usize> = (0..n).collect();
+    let mut rank: Vec<usize> = vec![0; n];
+
+    fn find(x: usize, parent: &mut [usize]) -> usize {
+        if parent[x] != x {
+            parent[x] = find(parent[x], parent);
+        }
+        parent[x]
+    }
+
+    fn union(x: usize, y: usize, parent: &mut [usize], rank: &mut [usize]) -> bool {
+        let rx = find(x, parent);
+        let ry = find(y, parent);
+        if rx != ry {
+            if rank[rx] < rank[ry] {
+                parent[rx] = ry;
+            } else if rank[rx] > rank[ry] {
+                parent[ry] = rx;
+            } else {
+                parent[ry] = rx;
+                rank[rx] += 1;
+            }
+            return true;
+        }
+        false
+    }
+
+    // Process edges in order, track the last successful connection 
+    let mut merges = 0;
+    let mut last_merge: Option<(usize, usize)> = None;
+    for (_, i, j) in &edges {
+        if union(*i, *j, &mut parent, &mut rank) {
+            merges += 1;
+            last_merge = Some((*i, *j));
+            if merges == n - 1 {
+                break;
+            }
+        }
+    }
+
+    if let Some((i, j)) = last_merge {
+        let last_point = list_of_points[i];
+        let second_last_point = list_of_points[j];
+        (last_point.0 * second_last_point.0).to_string()
+    } else {
+        "0".to_string()
+    }
 }
 
 /// Main function to read input file, process it, and write to output file
