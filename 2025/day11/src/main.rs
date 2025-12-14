@@ -79,6 +79,8 @@ fn parse_input_part_2_owned(input: &str) -> HashMap<String, Vec<String>> {
     map
 }
 
+// Perform topological sort using DFS on the graph
+// Returns an error if a cycle is detected
 fn topological_order<'a>(
     start: &'a str,
     graph: &'a HashMap<String, Vec<String>>,
@@ -93,16 +95,21 @@ fn topological_order<'a>(
         if visiting.contains(node) {
             return Err(format!("Cycle detected at {}", node));
         }
-        if visited.insert(node) {
-            visiting.insert(node);
-            if let Some(neighbors) = graph.get(node) {
-                for neighbor in neighbors {
-                    dfs(neighbor, graph, visiting, visited, order)?;
-                }
-            }
-            visiting.remove(node);
-            order.push(node.to_string());
+        if visited.contains(node) {
+            return Ok(());
         }
+
+        visiting.insert(node);
+        visited.insert(node);
+
+        if let Some(neighbors) = graph.get(node) {
+            for neighbor in neighbors {
+                dfs(neighbor, graph, visiting, visited, order)?;
+            }
+        }
+
+        visiting.remove(node);
+        order.push(node.to_string());
         Ok(())
     }
 
@@ -110,9 +117,11 @@ fn topological_order<'a>(
     let mut visited = HashSet::new();
     let mut order = Vec::new();
     dfs(start, graph, &mut visiting, &mut visited, &mut order)?;
-    order.reverse(); // ensure parents appear before children
+    // Reverse to get correct topological order
+    order.reverse();
     Ok(order)
 }
+
 
 // Count all paths from "svr" to "out" that pass through both "dac" and "fft"
 // (order agnostic) using DAG dynamic programming.
@@ -124,6 +133,7 @@ fn solutioner_for_part_2(input: &str) -> String {
 
     // DP that carries whether we've seen dac/fft along the path.
     // States are represented as bits: 0b01 => seen dac, 0b10 => seen fft.
+    // We use bits because bits give us an easy way to track state combinations.
     let mut counts: HashMap<&str, [u128; 4]> = HashMap::new();
     counts.insert("svr", [1, 0, 0, 0]);
 
